@@ -30,7 +30,7 @@ This application helps analyze and predict student continuation patterns in comp
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/student-exam-continuation-prediction.git
+git clone https://github.com/Bhavya180/student-exam-continuation-prediction
 cd student-exam-continuation-prediction
 ```
 
