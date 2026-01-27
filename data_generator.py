@@ -19,19 +19,36 @@ def generate_jee_data(num_samples=50000):
         test_review = np.random.choice(['Always', 'Never']) # Updated
         coaching_satisfaction = np.random.randint(1, 6) # 1-5 scale
         
-        # Calculate target based on new logic
+        # New Psychological Factors
+        motivation = np.random.randint(1, 6)
+        confidence = np.random.randint(1, 6)
+        stress = np.random.randint(1, 6)
+        burnout = np.random.choice(['Yes', 'No'])
+        fear = np.random.randint(1, 6)
+        goal_clarity = np.random.randint(1, 6)
+        discipline = np.random.randint(1, 6)
+        fatigue = np.random.randint(1, 6)
+        attempts = np.random.randint(0, 4)
+
+        # Calculate target based on logic
         avg_score = (physics + chemistry + maths) / 3
         score = 0
         if avg_score >= 55: score += 2
         if study_hours >= 6: score += 2
         if consistency == 'Regular': score += 2
         
-        target = 1 if score >= 4 else 0
+        # New factors impact
+        if motivation >= 4: score += 1
+        elif motivation == 1: score -= 1
+        
+        if attempts == 0: score += 2
+        elif attempts == 1: score += 1
+        else: score -= 1
+        
+        target = 1 if score >= 5 else 0 
         
         data.append({
-            'Physics_Marks': physics,
-            'Chemistry_Marks': chemistry,
-            'Maths_Marks': maths,
+            'Physics_Marks': physics, 'Chemistry_Marks': chemistry, 'Maths_Marks': maths,
             'Practical_Ability': practical_ability,
             'Improvement_Rate': round(improvement_rate, 2),
             'Rank_Trend': rank_trend,
@@ -41,6 +58,15 @@ def generate_jee_data(num_samples=50000):
             'Sleep_Hours': round(sleep_hours, 1),
             'Test_Review_Behavior': test_review,
             'Coaching_Satisfaction': coaching_satisfaction,
+            'Motivation_Level': motivation,
+            'Confidence_Level': confidence,
+            'Stress_Level': stress,
+            'Burnout_Symptoms': burnout,
+            'Fear_of_Failure': fear,
+            'Goal_Clarity': goal_clarity,
+            'Self_Discipline': discipline,
+            'Mental_Fatigue': fatigue,
+            'Attempts': attempts,
             'Target_Continuation': target
         })
     return pd.DataFrame(data)
@@ -62,17 +88,32 @@ def generate_neet_data(num_samples=50000):
         test_review = np.random.choice(['Always', 'Never'])
         coaching_satisfaction = np.random.randint(1, 6)
         
+        motivation = np.random.randint(1, 6)
+        confidence = np.random.randint(1, 6)
+        stress = np.random.randint(1, 6)
+        burnout = np.random.choice(['Yes', 'No'])
+        fear = np.random.randint(1, 6)
+        goal_clarity = np.random.randint(1, 6)
+        discipline = np.random.randint(1, 6)
+        fatigue = np.random.randint(1, 6)
+        attempts = np.random.randint(0, 4)
+
         avg_score = (physics + chemistry + biology) / 3
         score = 0
         if avg_score >= 55: score += 2
         if study_hours >= 6: score += 2
         
+        if motivation >= 4: score += 1
+        elif motivation == 1: score -= 1
+        
+        if attempts == 0: score += 2
+        elif attempts == 1: score += 1
+        else: score -= 1
+        
         target = 1 if score >= 4 else 0
 
         data.append({
-            'Physics_Marks': physics,
-            'Chemistry_Marks': chemistry,
-            'Biology_Marks': biology,
+            'Physics_Marks': physics, 'Chemistry_Marks': chemistry, 'Biology_Marks': biology,
             'Theoretical_Understanding': theory_understanding,
             'Improvement_Rate': round(improvement_rate, 2),
             'Rank_Trend': rank_trend,
@@ -82,6 +123,15 @@ def generate_neet_data(num_samples=50000):
             'Sleep_Hours': round(sleep_hours, 1),
             'Test_Review_Behavior': test_review,
             'Coaching_Satisfaction': coaching_satisfaction,
+            'Motivation_Level': motivation,
+            'Confidence_Level': confidence,
+            'Stress_Level': stress,
+            'Burnout_Symptoms': burnout,
+            'Fear_of_Failure': fear,
+            'Goal_Clarity': goal_clarity,
+            'Self_Discipline': discipline,
+            'Mental_Fatigue': fatigue,
+            'Attempts': attempts,
             'Target_Continuation': target
         })
     return pd.DataFrame(data)
@@ -109,22 +159,35 @@ def generate_commerce_data(num_samples=50000):
         test_review = np.random.choice(['Always', 'Never'])
         coaching_satisfaction = np.random.randint(1, 6)
         
+        motivation = np.random.randint(1, 6)
+        confidence = np.random.randint(1, 6)
+        stress = np.random.randint(1, 6)
+        burnout = np.random.choice(['Yes', 'No'])
+        fear = np.random.randint(1, 6)
+        goal_clarity = np.random.randint(1, 6)
+        discipline = np.random.randint(1, 6)
+        fatigue = np.random.randint(1, 6)
+        attempts = np.random.randint(0, 4)
+
         avg_score = (accounts + law + taxation + audit + fin_mgmt + costing) / 6
         score = 0
         if avg_score >= 55: score += 2
-        if concept_clarity == 'High': score += 2  # Added back
-        if study_hours >= 6: score += 1           # Added back
-        if consistency == 'Regular': score += 1   # Added back
+        if concept_clarity == 'High': score += 2
+        if study_hours >= 6: score += 1
+        if consistency == 'Regular': score += 1
         
-        target = 1 if score >= 4 else 0
+        if motivation >= 4: score += 1
+        elif motivation == 1: score -= 1
+        
+        if attempts == 0: score += 2
+        elif attempts == 1: score += 1
+        else: score -= 1
+        
+        target = 1 if score >= 5 else 0
 
         data.append({
-            'Accounts_Marks': accounts,
-            'Law_Marks': law,
-            'Taxation_Marks': taxation,
-            'Audit_Marks': audit,
-            'Fin_Mgmt_Marks': fin_mgmt,
-            'Costing_Marks': costing,
+            'Accounts_Marks': accounts, 'Law_Marks': law, 'Taxation_Marks': taxation,
+            'Audit_Marks': audit, 'Fin_Mgmt_Marks': fin_mgmt, 'Costing_Marks': costing,
             'Concept_Clarity': concept_clarity,
             'Answer_Writing': answer_writing,
             'Syllabus_Completion': syllabus_completion,
@@ -136,6 +199,15 @@ def generate_commerce_data(num_samples=50000):
             'Sleep_Hours': round(sleep_hours, 1),
             'Test_Review_Behavior': test_review,
             'Coaching_Satisfaction': coaching_satisfaction,
+            'Motivation_Level': motivation,
+            'Confidence_Level': confidence,
+            'Stress_Level': stress,
+            'Burnout_Symptoms': burnout,
+            'Fear_of_Failure': fear,
+            'Goal_Clarity': goal_clarity,
+            'Self_Discipline': discipline,
+            'Mental_Fatigue': fatigue,
+            'Attempts': attempts,
             'Target_Continuation': target
         })
     return pd.DataFrame(data)

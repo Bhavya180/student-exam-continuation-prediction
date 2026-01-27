@@ -66,27 +66,25 @@ if st.session_state.page == "Prediction":
 
     # Function to render input forms
     def get_user_input(exam_type):
-        st.subheader(f"Enter Academic & Behavioral Details ⭐")
+        st.subheader(f"Enter Academic, Psychological & Behavioral Details ⭐")
         
         col1, col2 = st.columns(2)
         
         inputs = {}
         
         with col1:
-            st.markdown("#### 📚 Academic Performance Indicators")
+            st.markdown("#### 📚 Academic & Psychological Factors")
             if exam_type == 'JEE':
                 inputs['Physics_Marks'] = st.slider("Physics Marks (Mock Avg)", 0, 100, 60)
                 inputs['Chemistry_Marks'] = st.slider("Chemistry Marks (Mock Avg)", 0, 100, 60)
                 inputs['Maths_Marks'] = st.slider("Maths Marks (Mock Avg)", 0, 100, 60)
                 inputs['Practical_Ability'] = st.selectbox("Practical Problem Solving", ['Low', 'Medium', 'High'])
-                inputs['Test_Review_Behavior'] = st.selectbox("Review Tests?", ['Always', 'Never']) # Updated
 
             elif exam_type == 'NEET':
                 inputs['Physics_Marks'] = st.slider("Physics Marks (Mock Avg)", 0, 100, 60)
                 inputs['Chemistry_Marks'] = st.slider("Chemistry Marks (Mock Avg)", 0, 100, 60)
                 inputs['Biology_Marks'] = st.slider("Biology Marks (Mock Avg)", 0, 100, 60)
                 inputs['Theoretical_Understanding'] = st.selectbox("Theoretical Understanding", ['Low', 'Medium', 'High'])
-                inputs['Test_Review_Behavior'] = st.selectbox("Review Tests?", ['Always', 'Never']) # Updated
 
             elif exam_type == 'CA':
                 inputs['Accounts_Marks'] = st.slider("Accounts Marks", 0, 100, 60)
@@ -98,17 +96,32 @@ if st.session_state.page == "Prediction":
                 inputs['Concept_Clarity'] = st.selectbox("Concept Clarity", ['Low', 'Medium', 'High'])
                 inputs['Answer_Writing'] = st.selectbox("Answer Writing Quality", ['Poor', 'Average', 'Good'])
                 inputs['Syllabus_Completion'] = st.selectbox("Syllabus Status", ['On Time', 'Delayed'])
-                inputs['Test_Review_Behavior'] = st.selectbox("Review Tests?", ['Always', 'Never']) # Updated
+
+            st.markdown("---")
+            st.markdown("#### 🧠 Psychological State")
+            inputs['Motivation_Level'] = st.select_slider("Motivation Level (1-5)", options=[1, 2, 3, 4, 5], value=4)
+            inputs['Confidence_Level'] = st.select_slider("Confidence in clearing Exam", options=[1, 2, 3, 4, 5], value=3)
+            inputs['Stress_Level'] = st.select_slider("Stress Level", options=[1, 2, 3, 4, 5], value=2)
+            inputs['Burnout_Symptoms'] = st.radio("Burnout Symptoms?", ['No', 'Yes'], horizontal=True)
+            inputs['Fear_of_Failure'] = st.select_slider("Fear of Failure (1-5)", options=[1, 2, 3, 4, 5], value=2)
+            inputs['Goal_Clarity'] = st.select_slider("Goal Clarity (1-5)", options=[1, 2, 3, 4, 5], value=4)
+            inputs['Self_Discipline'] = st.select_slider("Self-Discipline Rating", options=[1, 2, 3, 4, 5], value=4)
+            inputs['Mental_Fatigue'] = st.select_slider("Mental Fatigue Level", options=[1, 2, 3, 4, 5], value=2)
 
         with col2:
-            st.markdown("#### ⏳ Study Habits & Lifestyle Factors")
+            st.markdown("#### ⏳ Study Habits & Lifestyle")
             inputs['Improvement_Rate'] = st.slider("Improvement Rate (%)", -10.0, 20.0, 2.0)
             inputs['Rank_Trend'] = st.selectbox("Rank Trend", ['Improving', 'Stable', 'Declining'])
             inputs['Study_Hours'] = st.number_input("Study Hours/Day", 0, 18, 6)
-            inputs['Study_Consistency'] = st.selectbox("Study Consistency", ['Regular', 'Irregular']) # Updated
+            inputs['Study_Consistency'] = st.selectbox("Study Consistency", ['Regular', 'Irregular'])
             inputs['Screen_Time'] = st.number_input("Screen Time (Hrs)", 0.0, 12.0, 3.0)
             inputs['Sleep_Hours'] = st.number_input("Sleep Hours", 0.0, 12.0, 7.0)
             inputs['Coaching_Satisfaction'] = st.slider("Coaching Satisfaction (1-5)", 1, 5, 3)
+            inputs['Test_Review_Behavior'] = st.selectbox("Review Tests?", ['Always', 'Never'])
+            
+            st.markdown("---")
+            st.markdown("#### 🔄 Examination History")
+            inputs['Attempts'] = st.selectbox("Number of Previous Attempts", [0, 1, 2, 3], index=0)
             
         return inputs
 
@@ -133,7 +146,7 @@ if st.session_state.page == "Prediction":
 
                 ann_decision = "Continue" if pred_ann == 1 else "Drop/Change"
                 ann_confidence = prob_ann if pred_ann == 1 else 1 - prob_ann
-                
+            
                 # --- Display Results ---
                 st.markdown("---")
                 st.subheader("📊 Analysis Results")
@@ -202,6 +215,18 @@ if st.session_state.page == "Prediction":
                             inputs['Taxation_Marks'], inputs['Audit_Marks'],
                             inputs['Fin_Mgmt_Marks'], inputs['Costing_Marks']
                         ]
+                    
+                    # Add Psychological Factors (Scale to 0-100)
+                    psy_cats = ['Motivation', 'Confidence', 'Goal Clarity', 'Discipline']
+                    psy_vals = [
+                        inputs['Motivation_Level'] * 20,
+                        inputs['Confidence_Level'] * 20,
+                        inputs['Goal_Clarity'] * 20,
+                        inputs['Self_Discipline'] * 20
+                    ]
+                    
+                    cats += psy_cats
+                    vals += psy_vals
                     
                     st.plotly_chart(plot_radar_chart(cats, vals), use_container_width=True)
                     

@@ -120,10 +120,33 @@ def calculate_multi_factor_score(student_data, exam_type):
         score -= 1
         breakdown['Coaching'] = '-1 (Low Quality)'
 
-    # --- Step 11: Final Prediction ---
-    final_decision = "Continue Preparation" if score >= 4 else "Consider Dropping/Changing Strategy"
+    # --- Step 11: Psychological & Motivation (NEW) ---
+    motivation = student_data.get('Motivation_Level', 3)
+    if motivation >= 4:
+        score += 1
+        breakdown['Motivation'] = '+1 (High)'
+    elif motivation <= 1:
+        score -= 1
+        breakdown['Motivation'] = '-1 (Low)'
+    else:
+        breakdown['Motivation'] = '0 (Neutral)'
+
+    attempts = student_data.get('Attempts', 0)
+    if attempts == 0:
+        score += 2
+        breakdown['Attempts'] = '+2 (Fresh Attempt)'
+    elif attempts == 1:
+        score += 1
+        breakdown['Attempts'] = '+1 (1st Retake/Drop)'
+    else:
+        score -= 1
+        breakdown['Attempts'] = '-1 (Multiple Retakes)'
+
+    # --- Step 12: Final Prediction ---
+    # Adjusted threshold because of more positive/negative point opportunities
+    final_decision = "Continue Preparation" if score >= 5 else "Consider Dropping/Changing Strategy"
     
-    # --- Step 12: Scenario Recommendation ---
+    # --- Step 13: Scenario Recommendation ---
     # "1 weak subject -> Extra focus"
     if low_subjects == 1:
         recommendation.append("Extra focus required on the single weak subject.")
@@ -144,6 +167,20 @@ def calculate_multi_factor_score(student_data, exam_type):
     is_poor_lifestyle = (sleep < 6.5) or (screen > 6)
     if avg_mock_score >= 70 and is_poor_lifestyle:
         recommendation.append("Risk of burnout. Urgent lifestyle correction (Sleep/Screen) needed.")
+
+    # NEW Psychological Recommendations
+    burnout = student_data.get('Burnout_Symptoms', 'No')
+    stress = student_data.get('Stress_Level', 2)
+    fatigue = student_data.get('Mental_Fatigue', 2)
+
+    if burnout == 'Yes':
+        recommendation.append("URGENT: Burnout symptoms detected. Take a complete break for 2-3 days and consult a counselor.")
+    
+    if stress >= 4:
+        recommendation.append("High Stress Levels: Incorporate meditation and physical activity into your daily routine.")
+    
+    if fatigue >= 4:
+        recommendation.append("Mental Fatigue: Your brain needs more rest. Ensure 7+ hours of quality sleep and take short breaks every 50 mins.")
 
     if not recommendation:
         recommendation.append("Maintain consistency and focus on weak areas.")
