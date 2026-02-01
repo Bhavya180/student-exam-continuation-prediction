@@ -1,10 +1,22 @@
 import pandas as pd
 import numpy as np
 
-def calculate_multi_factor_score(student_data, exam_type):
+def calculate_multi_factor_score(student_data, exam_type, params=None):
     """
     Calculates score based on the specific Step-by-Step Architecture.
+    Allows for parameter tuning via the params dictionary.
     """
+    if params is None:
+        params = {
+            'subject_threshold': 65,
+            'high_avg_threshold': 70,
+            'passing_avg_threshold': 55,
+            'target_study_hours': 6,
+            'min_sleep_hours': 6,
+            'max_screen_time': 6,
+            'continuation_score_threshold': 5
+        }
+
     score = 0
     breakdown = {}
     recommendation = []
@@ -15,7 +27,7 @@ def calculate_multi_factor_score(student_data, exam_type):
         subjects = [student_data.get('Physics_Marks', 0), student_data.get('Chemistry_Marks', 0), student_data.get('Maths_Marks', 0)]
     elif exam_type == 'NEET':
         subjects = [student_data.get('Physics_Marks', 0), student_data.get('Chemistry_Marks', 0), student_data.get('Biology_Marks', 0)]
-    elif exam_type == 'Commerce':
+    elif exam_type == 'Commerce' or exam_type == 'CA':
         subjects = [
             student_data.get('Accounts_Marks', 0), student_data.get('Law_Marks', 0), 
             student_data.get('Taxation_Marks', 0), student_data.get('Audit_Marks', 0),
@@ -25,28 +37,28 @@ def calculate_multi_factor_score(student_data, exam_type):
     # 3.1 Avg calculation
     avg_mock_score = np.mean(subjects) if subjects else 0
     
-    # 4. Subject-wise Strength (Threshold 65)
-    high_subjects = sum(1 for s in subjects if s >= 65)
-    low_subjects = sum(1 for s in subjects if s < 65)
+    # 4. Subject-wise Strength
+    high_subjects = sum(1 for s in subjects if s >= params['subject_threshold'])
+    low_subjects = sum(1 for s in subjects if s < params['subject_threshold'])
 
     if high_subjects >= 2:
         score += 2
-        breakdown['Subject Strength'] = '+2 (>=2 Subjects ≥ 65)'
+        breakdown['Subject Strength'] = f"+2 (>=2 Subjects ≥ {params['subject_threshold']})"
     elif low_subjects >= 2:
         score -= 2
-        breakdown['Subject Weakness'] = '-2 (>=2 Subjects < 65)'
+        breakdown['Subject Weakness'] = f"-2 (>=2 Subjects < {params['subject_threshold']})"
         recommendation.append("Structured remediation plan needed for weak subjects.")
 
     # --- Step 5: Overall Academic Performance ---
-    if avg_mock_score >= 70:
+    if avg_mock_score >= params['high_avg_threshold']:
         score += 3
-        breakdown['Overall Academic'] = '+3 (Avg >= 70)'
-    elif avg_mock_score >= 55:
+        breakdown['Overall Academic'] = f"+3 (Avg >= {params['high_avg_threshold']})"
+    elif avg_mock_score >= params['passing_avg_threshold']:
         score += 2
-        breakdown['Overall Academic'] = '+2 (Avg >= 55)'
+        breakdown['Overall Academic'] = f"+2 (Avg >= {params['passing_avg_threshold']})"
     else:
         score -= 2
-        breakdown['Overall Academic'] = '-2 (Avg < 55)'
+        breakdown['Overall Academic'] = f"-2 (Avg < {params['passing_avg_threshold']})"
 
     # --- Step 6: Improvement Rate ---
     imp_rate = student_data.get('Improvement_Rate', 0)
@@ -71,12 +83,12 @@ def calculate_multi_factor_score(student_data, exam_type):
 
     # --- Step 8: Study Habits ---
     study_hours = student_data.get('Study_Hours', 0)
-    if study_hours >= 6:
+    if study_hours >= params['target_study_hours']:
         score += 2
-        breakdown['Study Hours'] = '+2 (>= 6 hrs)'
-    elif study_hours < 4:
+        breakdown['Study Hours'] = f"+2 (>= {params['target_study_hours']} hrs)"
+    elif study_hours < params['target_study_hours'] - 2:
         score -= 2
-        breakdown['Study Hours'] = '-2 (< 4 hrs)'
+        breakdown['Study Hours'] = f"-2 (< {params['target_study_hours'] - 2} hrs)"
 
     consistency = student_data.get('Study_Consistency', 'Irregular')
     if consistency == "Regular":
@@ -88,20 +100,20 @@ def calculate_multi_factor_score(student_data, exam_type):
 
     # --- Step 9: Lifestyle ---
     sleep = student_data.get('Sleep_Hours', 0)
-    if sleep >= 6.5:
+    if sleep >= params['min_sleep_hours']:
         score += 1
-        breakdown['Sleep'] = '+1 (>= 6.5 hrs)'
+        breakdown['Sleep'] = f"+1 (>= {params['min_sleep_hours']} hrs)"
     else:
         score -= 1
-        breakdown['Sleep'] = '-1 (< 6.5 hrs)'
+        breakdown['Sleep'] = f"-1 (< {params['min_sleep_hours']} hrs)"
 
     screen = student_data.get('Screen_Time', 0)
-    if screen > 6:
+    if screen > params['max_screen_time']:
         score -= 2
-        breakdown['Screen Time'] = '-2 (> 6 hrs)'
-    elif screen < 4:
+        breakdown['Screen Time'] = f"-2 (> {params['max_screen_time']} hrs)"
+    elif screen < params['max_screen_time'] - 2:
         score += 1
-        breakdown['Screen Time'] = '+1 (< 4 hrs)'
+        breakdown['Screen Time'] = f"+1 (< {params['max_screen_time'] - 2} hrs)"
 
     # --- Step 10: Test Review & Coaching ---
     review = student_data.get('Test_Review_Behavior', 'Never')
@@ -143,46 +155,83 @@ def calculate_multi_factor_score(student_data, exam_type):
         breakdown['Attempts'] = '-1 (Multiple Retakes)'
 
     # --- Step 12: Final Prediction ---
-    # Adjusted threshold because of more positive/negative point opportunities
-    final_decision = "Continue Preparation" if score >= 5 else "Consider Dropping/Changing Strategy"
+    final_decision = "Continue Preparation" if score >= params['continuation_score_threshold'] else "Consider Dropping/Changing Strategy"
     
-    # --- Step 13: Scenario Recommendation ---
-    # "1 weak subject -> Extra focus"
-    if low_subjects == 1:
-        recommendation.append("Extra focus required on the single weak subject.")
+    # --- Step 13: Decision Support System (Advanced Recommendations) ---
+    # We organize recommendations into categories with severity levels
+    recommendations = {
+        "Academic": [],
+        "Lifestyle": [],
+        "Strategy": []
+    }
+
+    # 13.1 Academic Triggers
+    subject_names = []
+    if exam_type == 'JEE':
+        subject_names = ['Physics', 'Chemistry', 'Maths']
+    elif exam_type == 'NEET':
+        subject_names = ['Physics', 'Chemistry', 'Biology']
     
-    # "2 weak subjects + positive habits -> Low chance / Remediation"
-    is_positive_habits = (study_hours >= 6) and (consistency == "Regular")
-    if low_subjects >= 2:
-        if is_positive_habits:
-            recommendation.append("Critical: structured remediation needed despite good habits.")
-        else:
-            recommendation.append("High Drop Risk: Poor academics combined with poor habits.")
+    # Specific Subject Advice
+    if exam_type in ['JEE', 'NEET']:
+        if subjects[0] < 60: # Physics
+            recommendations["Academic"].append({"msg": "Physics Alert: Focus on concept visualization and numerical derivation.", "severity": "medium"})
+        
+        if exam_type == 'JEE' and subjects[2] < 60: # Maths
+             recommendations["Academic"].append({"msg": "Maths Weakness: Increase daily numerical solving count by 50%. Focus on weak chapters.", "severity": "high"})
+        
+        if exam_type == 'NEET' and subjects[2] < 60: # Biology
+             recommendations["Academic"].append({"msg": "Biology Lag: Increase NCERT reading frequency. Focus on memorization.", "severity": "high"})
 
-    # "Average marks + Improving -> Continue"
-    if 55 <= avg_mock_score < 70 and imp_rate > 0:
-         recommendation.append("Good momentum. Maintain current strategy to improve marks further.")
+    # "Weak two subjects + low sleep -> intervention plan"
+    if low_subjects >= 2 and sleep < 6:
+         recommendations["Strategy"].append({
+             "msg": "CRISIS INTERVENTION PLAN: You are failing multiple subjects while sleep deprived. \n1. Stop learning new topics immediately.\n2. Sleep 7+ hours for 3 days.\n3. Revise only strong basics to regain confidence.", 
+             "severity": "critical"
+         })
 
-    # "Strong academics + Poor lifestyle -> Lifestyle correction"
-    is_poor_lifestyle = (sleep < 6.5) or (screen > 6)
-    if avg_mock_score >= 70 and is_poor_lifestyle:
-        recommendation.append("Risk of burnout. Urgent lifestyle correction (Sleep/Screen) needed.")
+    # "Weak Maths + good habits -> extra numericals" (Generic version for logic subjects)
+    is_hard_working = (study_hours >= 6) and (consistency == "Regular")
+    
+    if is_hard_working and low_subjects > 0:
+        recommendations["Academic"].append({
+            "msg": "High Effort / Low Result: Your study technique might be ineffective. Switch from passive reading to active recall and timed practice.", 
+            "severity": "medium"
+        })
 
-    # NEW Psychological Recommendations
+    # 13.2 Lifestyle Triggers
+    # "High screen time -> digital detox recommendation"
+    if screen > 6:
+        recommendations["Lifestyle"].append({
+            "msg": "Digital Detox Needed: Your screen time is critically high. Install app blockers and switch to physical books for 1 week.", 
+            "severity": "high"
+        })
+    
+    # Burnout handling
     burnout = student_data.get('Burnout_Symptoms', 'No')
     stress = student_data.get('Stress_Level', 2)
-    fatigue = student_data.get('Mental_Fatigue', 2)
 
-    if burnout == 'Yes':
-        recommendation.append("URGENT: Burnout symptoms detected. Take a complete break for 2-3 days and consult a counselor.")
+    if burnout == 'Yes' or stress >= 4:
+         recommendations["Lifestyle"].append({
+             "msg": "Burnout Protocol: Mandatory 2-day break. No studies. Nature walk or hobby time required.", 
+             "severity": "high"
+         })
+
+    # 13.3 Strategic Triggers
+    if avg_mock_score > 70 and student_data.get('Confidence_Level', 3) < 3:
+        recommendations["Strategy"].append({
+            "msg": "Imposter Syndrome Alert: Your scores are good, but confidence is low. Stop comparing with others. Trust your data.", 
+            "severity": "medium"
+        })
     
-    if stress >= 4:
-        recommendation.append("High Stress Levels: Incorporate meditation and physical activity into your daily routine.")
-    
-    if fatigue >= 4:
-        recommendation.append("Mental Fatigue: Your brain needs more rest. Ensure 7+ hours of quality sleep and take short breaks every 50 mins.")
+    if avg_mock_score < 40 and student_data.get('Confidence_Level', 3) > 4:
+        recommendations["Strategy"].append({
+            "msg": "Reality Check: Confidence is outpacing performance. Review your test papers to find actual gaps.", 
+            "severity": "high"
+        })
 
-    if not recommendation:
-        recommendation.append("Maintain consistency and focus on weak areas.")
+    # Default if empty
+    if not any(recommendations.values()):
+        recommendations["Strategy"].append({"msg": "Maintenance Mode: Continue with your current balanced routine.", "severity": "low"})
 
-    return score, final_decision, recommendation, breakdown
+    return score, final_decision, recommendations, breakdown

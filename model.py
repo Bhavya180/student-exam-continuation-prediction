@@ -9,6 +9,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neural_network import MLPClassifier
 
 from data_generator import generate_jee_data, generate_neet_data, generate_commerce_data
+import streamlit as st
+
 
 class ExamModel:
     def __init__(self, exam_type):
@@ -172,3 +174,19 @@ class ExamModel:
             }
             
         return results
+
+@st.cache_resource
+def get_trained_model(exam_type):
+    model = ExamModel(exam_type)
+    acc_rf, acc_ann = model.train()
+    return model, acc_rf, acc_ann
+
+@st.cache_data
+def get_model_comparison(exam_type):
+    model = ExamModel(exam_type)
+    return model.compare_models()
+
+@st.cache_data
+def get_dataset_distribution(exam_type):
+    model = ExamModel(exam_type)
+    return model._get_data()

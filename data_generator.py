@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 import random
+import streamlit as st
 
-def generate_jee_data(num_samples=50000):
+@st.cache_data
+def generate_jee_data(num_samples=20000):
     data = []
     for _ in range(num_samples):
         physics = np.random.randint(20, 100)
@@ -71,7 +73,8 @@ def generate_jee_data(num_samples=50000):
         })
     return pd.DataFrame(data)
 
-def generate_neet_data(num_samples=50000):
+@st.cache_data
+def generate_neet_data(num_samples=20000):
     data = []
     for _ in range(num_samples):
         physics = np.random.randint(20, 100)
@@ -136,7 +139,8 @@ def generate_neet_data(num_samples=50000):
         })
     return pd.DataFrame(data)
 
-def generate_commerce_data(num_samples=50000):
+@st.cache_data
+def generate_commerce_data(num_samples=20000):
     data = []
     for _ in range(num_samples):
         accounts = np.random.randint(20, 100)

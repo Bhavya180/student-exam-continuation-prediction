@@ -3,13 +3,13 @@ import pandas as pd
 import time
 
 from feature_engineering import calculate_multi_factor_score
-from model import ExamModel
+from model import ExamModel, get_trained_model, get_model_comparison, get_dataset_distribution
 from utils import plot_radar_chart, plot_gauge_chart, plot_feature_importance, plot_confusion_matrix, plot_continuation_distribution, plot_exam_comparison
 
 # Set Page Config
-st.set_page_config(layout="wide", page_title="Student Continuation Prediction in Competitive Exams", page_icon="🎓")
+st.set_page_config(layout="wide", page_title="Competitive Exam Dropout Prediction System", page_icon="🎓")
 
-st.title("🎓 Modeling Student Preparation Continuation for Competitive Examinations")
+st.title("🎓 Competitive Exam Dropout Prediction System")
 st.markdown("---")
 
 # --- Step 1: Exam Selection ---
@@ -50,6 +50,19 @@ if st.sidebar.button("📈 Exam-wise Comparison Dashboard"):
     go_to_exam_comparison()
     st.rerun()
 
+# --- Feature Parameter Tuning ---
+st.sidebar.markdown("---")
+with st.sidebar.expander("⚙️ Feature Threshold Tuning"):
+    tuning_params = {
+        'subject_threshold': st.slider("Subject Pass Mark", 33, 90, 65),
+        'high_avg_threshold': st.slider("High Performance Avg", 60, 95, 70),
+        'passing_avg_threshold': st.slider("Min Passing Avg", 33, 70, 55),
+        'target_study_hours': st.slider("Target Study Hours", 4, 16, 6),
+        'min_sleep_hours': st.slider("Min Sleep Hours", 4, 10, 6),
+        'max_screen_time': st.slider("Max Screen Time", 1, 12, 6),
+        'continuation_score_threshold': st.slider("Min Score to Continue", 0, 15, 5)
+    }
+
 # --- Main Content Router ---
 
 if st.session_state.page == "Prediction":
@@ -57,8 +70,7 @@ if st.session_state.page == "Prediction":
     st.subheader("🌐 Dataset Context")
     # We can use a temporary model to get data distribution
     with st.expander("📊 View Dataset Distribution", expanded=True):
-        dist_model = ExamModel(exam_type)
-        df_dist = dist_model._get_data()
+        df_dist = get_dataset_distribution(exam_type)
         st.plotly_chart(plot_continuation_distribution(df_dist), use_container_width=True)
         st.info("💡 **Why this matters:** Knowing the balance between continuation and dropout in the training data helps contextualize the AI's predictions.")
     
@@ -114,8 +126,8 @@ if st.session_state.page == "Prediction":
             inputs['Rank_Trend'] = st.selectbox("Rank Trend", ['Improving', 'Stable', 'Declining'])
             inputs['Study_Hours'] = st.number_input("Study Hours/Day", 0, 18, 6)
             inputs['Study_Consistency'] = st.selectbox("Study Consistency", ['Regular', 'Irregular'])
-            inputs['Screen_Time'] = st.number_input("Screen Time (Hrs)", 0.0, 12.0, 3.0)
-            inputs['Sleep_Hours'] = st.number_input("Sleep Hours", 0.0, 12.0, 7.0)
+            inputs['Screen_Time'] = st.number_input("Screen Time (Hrs)", 0, 12, 3, step=1)
+            inputs['Sleep_Hours'] = st.number_input("Sleep Hours", 0, 12, 7, step=1)
             inputs['Coaching_Satisfaction'] = st.slider("Coaching Satisfaction (1-5)", 1, 5, 3)
             inputs['Test_Review_Behavior'] = st.selectbox("Review Tests?", ['Always', 'Never'])
             
@@ -133,12 +145,11 @@ if st.session_state.page == "Prediction":
             time.sleep(1) # UX Filler
             
             # 1. Rule-Based Scoring
-            rb_score, rb_decision, rb_recs, rb_breakdown = calculate_multi_factor_score(inputs, exam_type)
+            rb_score, rb_decision, rb_recs, rb_breakdown = calculate_multi_factor_score(inputs, exam_type, params=tuning_params)
             
             # 2. AI Model Prediction
             try:
-                model = ExamModel(exam_type)
-                acc_rf, acc_ann = model.train() # Train on fly for demo
+                model, acc_rf, acc_ann = get_trained_model(exam_type)
                 pred_rf, prob_rf, pred_ann, prob_ann = model.predict(inputs)
                 
                 rf_decision = "Continue" if pred_rf == 1 else "Drop/Change"
@@ -149,37 +160,75 @@ if st.session_state.page == "Prediction":
             
                 # --- Display Results ---
                 st.markdown("---")
-                st.subheader("📊 Analysis Results")
                 
-                col_a, col_b = st.columns(2)
+                # --- Section 1: Prediction Summary ---
+                st.subheader("🔮 Prediction Outcome Summary")
                 
-                with col_a:
-                    st.info("### Rule-Based Engine")
-                    st.metric("Score (Points)", rb_score)
-                    st.write(f"**Recommendation:** {rb_decision}")
-                    with st.expander("See Scoring Breakdown"):
+                res_col1, res_col2, res_col3 = st.columns(3)
+                
+                with res_col1:
+                    st.info("### 📐 Rule-Based")
+                    st.metric("Score", rb_score)
+                    st.write(f"**Decision:** {rb_decision}")
+                    with st.expander("Why?"):
                         st.json(rb_breakdown)
-                    
-                    st.markdown("#### 💡 Scenario-Based Recommendations")
-                    for rec in rb_recs:
-                        st.warning(f"• {rec}")
 
-                with col_b:
-                    st.success("### AI Model Predictions")
-                    
-                    st.markdown("#### 🌲 Random Forest")
-                    st.metric("RF Accuracy", f"{acc_rf*100:.1f}%")
-                    st.write(f"**Prediction:** {rf_decision}")
+                with res_col2:
+                    st.success("### 🌲 Random Forest")
+                    st.metric("Accuracy", f"{acc_rf*100:.1f}%")
+                    st.write(f"**Decision:** {rf_decision}")
                     st.progress(rf_confidence)
-                    st.caption(f"Confidence: {rf_confidence*100:.1f}%")
-                    
-                    st.markdown("---")
-                    
-                    st.markdown("#### 🧠 Artificial Neural Network")
-                    st.metric("ANN Accuracy", f"{acc_ann*100:.1f}%")
-                    st.write(f"**Prediction:** {ann_decision}")
+
+                with res_col3:
+                    st.warning("### 🧠 Neural Network")
+                    st.metric("Accuracy", f"{acc_ann*100:.1f}%")
+                    st.write(f"**Decision:** {ann_decision}")
                     st.progress(ann_confidence)
-                    st.caption(f"Confidence: {ann_confidence*100:.1f}%")
+
+                st.markdown("---")
+
+                # --- Section 2: Decision Support System ---
+                st.subheader("🛡️ Decision Support System (Action Plan)")
+                
+                # Helper for severity colors
+                def get_severity_icon(severity):
+                    if severity == "critical": return "🚨"
+                    if severity == "high": return "🔴"
+                    if severity == "medium": return "🟠"
+                    return "🟢"
+
+                dss_col1, dss_col2, dss_col3 = st.columns(3)
+
+                with dss_col1:
+                    st.markdown("#### 🧠 Strategic Path")
+                    if rb_recs.get("Strategy"):
+                         for item in rb_recs["Strategy"]:
+                            icon = get_severity_icon(item['severity'])
+                            msg = f"{icon} {item['msg']}"
+                            if item['severity'] in ['critical', 'high']:
+                                st.error(msg)
+                            else:
+                                st.info(msg)
+                    else:
+                        st.write("No specific strategic interventions needed.")
+
+                with dss_col2:
+                    st.markdown("#### 📚 Academic Steps")
+                    if rb_recs.get("Academic"):
+                         for item in rb_recs["Academic"]:
+                             icon = get_severity_icon(item['severity'])
+                             st.warning(f"{icon} {item['msg']}")
+                    else:
+                        st.success("✅ Academic signals are stable.")
+
+                with dss_col3:
+                    st.markdown("#### 🌿 Lifestyle Fixes")
+                    if rb_recs.get("Lifestyle"):
+                         for item in rb_recs["Lifestyle"]:
+                             icon = get_severity_icon(item['severity'])
+                             st.error(f"{icon} {item['msg']}")
+                    else:
+                        st.success("✅ Lifestyle seems balanced.")
                     
                 # --- Visualizations ---
                 st.markdown("---")
@@ -251,8 +300,7 @@ elif st.session_state.page == "Comparison":
 
     with st.spinner("Training and Comparing Models (RF vs LR vs DT)..."):
         try:
-            model = ExamModel(exam_type)
-            results = model.compare_models()
+            results = get_model_comparison(exam_type)
             
             # Metrics Table
             metrics_data = []
@@ -310,8 +358,7 @@ elif st.session_state.page == "Exam Comparison":
 
             for i, exam in enumerate(exams_to_compare):
                 status_text.text(f"Processing {exam} data...")
-                model = ExamModel(exam)
-                df = model._get_data()
+                df = get_dataset_distribution(exam)
                 
                 # Calculate continuation rate
                 continuation_count = len(df[df['Target_Continuation'] == 1])
@@ -339,3 +386,4 @@ elif st.session_state.page == "Exam Comparison":
 
         except Exception as e:
             st.error(f"An error occurred while building the comparison dashboard: {e}")
+
